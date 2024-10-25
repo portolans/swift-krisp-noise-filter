@@ -6,10 +6,16 @@ enum LiveKitKrispNoiseFilterError: Error {
     case globalInitializationFailed
 }
 
-public class LiveKitKrispNoiseFilter {
+public class LiveKitKrispNoiseFilter: @unchecked Sendable {
     public var isEnabled: Bool {
         get { _state.isEnabled }
         set { _state.mutate { $0.isEnabled = newValue } }
+    }
+    public var didFailToInitialize: Bool {
+        _state.didFailToInitialize
+    }
+    public var failedToProcessChannels: [Int] {
+        _state.channelsFailed.sorted()
     }
 
     private let krisp = KrispNoiseFilter()
@@ -17,6 +23,8 @@ public class LiveKitKrispNoiseFilter {
     private struct State {
         var isEnabled: Bool = true
         var isInitializedWithRate: Int?
+        var didFailToInitialize: Bool = false
+        var channelsFailed: Set<Int> = []
     }
 
     private let _state = StateSync(State())
@@ -24,7 +32,7 @@ public class LiveKitKrispNoiseFilter {
     public init() {
         // This should never fail
         if !KrispNoiseFilter.krispGlobalInit() {
-            print("LiveKitKrispNoiseFilter GlobalInit Failed")
+            _state.mutate { $0.didFailToInitialize = true }
         }
     }
 }
@@ -57,7 +65,9 @@ extension LiveKitKrispNoiseFilter: AudioCustomProcessingDelegate {
                                        bufferSize: Int32(audioBuffer.framesPerBand),
                                        buffer: audioBuffer.rawBuffer(forChannel: channel))
             if !result {
-                print("LiveKitKrispNoiseFilter Process failed, channel: \(channel)")
+                _state.mutate { state in
+                    state.channelsFailed.insert(channel)
+                }
             }
         }
     }
