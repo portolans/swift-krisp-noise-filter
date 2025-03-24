@@ -25,12 +25,12 @@ public class LiveKitKrispNoiseFilter: @unchecked Sendable {
         var isEnabled: Bool = true
         var isInitializedWithRate: Int?
         var didFailToInitialize: Bool = false
+        var isAuthorized: Bool = true
         var channelsFailed: Set<Int> = []
     }
 
     private let _state = StateSync(State())
 
-    private let errorSubject = PassthroughSubject<String, Never>()
     private var cancellables = Set<AnyCancellable>()
 
     public init() {
@@ -38,14 +38,6 @@ public class LiveKitKrispNoiseFilter: @unchecked Sendable {
         if !KrispNoiseFilter.krispGlobalInit() {
             _state.mutate { $0.didFailToInitialize = true }
         }
-
-        // Throttle high-frequency errors to avoid spamming the console
-        errorSubject
-            .throttle(for: .seconds(60), scheduler: DispatchQueue.main, latest: true)
-            .sink { message in
-                print(message)
-            }
-            .store(in: &cancellables)
     }
 }
 
@@ -72,7 +64,7 @@ extension LiveKitKrispNoiseFilter: AudioCustomProcessingDelegate {
         guard _state.isEnabled else { return }
 
         guard krisp.isAuthorized else {
-            errorSubject.send("LiveKitKrispNoiseFilter disabled - This feature is supported only on LiveKit Cloud.")
+            _state.mutate { $0.isAuthorized = false }
             return
         }
 
@@ -85,7 +77,6 @@ extension LiveKitKrispNoiseFilter: AudioCustomProcessingDelegate {
                 _state.mutate { state in
                     state.channelsFailed.insert(channel)
                 }
-                errorSubject.send("LiveKitKrispNoiseFilter Process failed, channel: \(channel)")
             }
         }
     }
