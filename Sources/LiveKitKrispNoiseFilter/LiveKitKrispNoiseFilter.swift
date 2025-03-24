@@ -1,7 +1,6 @@
 import Foundation
 import KrispNoiseFilter
 import LiveKit
-import Combine
 
 enum LiveKitKrispNoiseFilterError: Error {
     case globalInitializationFailed
@@ -33,8 +32,6 @@ public class LiveKitKrispNoiseFilter: @unchecked Sendable {
     }
 
     private let _state = StateSync(State())
-
-    private var cancellables = Set<AnyCancellable>()
 
     public init() {
         // This should never fail
