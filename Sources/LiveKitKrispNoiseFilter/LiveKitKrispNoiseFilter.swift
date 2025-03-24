@@ -14,6 +14,9 @@ public class LiveKitKrispNoiseFilter: @unchecked Sendable {
     public var didFailToInitialize: Bool {
         _state.didFailToInitialize
     }
+    public var isAuthorized: Bool {
+        _state.isAuthorized
+    }
     public var failedToProcessChannels: [Int] {
         _state.channelsFailed.sorted()
     }
@@ -24,6 +27,7 @@ public class LiveKitKrispNoiseFilter: @unchecked Sendable {
         var isEnabled: Bool = true
         var isInitializedWithRate: Int?
         var didFailToInitialize: Bool = false
+        var isAuthorized: Bool = true
         var channelsFailed: Set<Int> = []
     }
 
@@ -58,6 +62,11 @@ extension LiveKitKrispNoiseFilter: AudioCustomProcessingDelegate {
 
     public func audioProcessingProcess(audioBuffer: LiveKit.LKAudioBuffer) {
         guard _state.isEnabled else { return }
+
+        guard krisp.isAuthorized else {
+            _state.mutate { $0.isAuthorized = false }
+            return
+        }
 
         for channel in 0 ..< audioBuffer.channels {
             let result = krisp.process(withBands: Int32(audioBuffer.bands),
