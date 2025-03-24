@@ -15,6 +15,9 @@ public class LiveKitKrispNoiseFilter: @unchecked Sendable {
     public var didFailToInitialize: Bool {
         _state.didFailToInitialize
     }
+    public var isAuthorized: Bool {
+        _state.isAuthorized
+    }
     public var failedToProcessChannels: [Int] {
         _state.channelsFailed.sorted()
     }
